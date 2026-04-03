@@ -51,7 +51,6 @@ public class PasswordManagerIdentityStoreProvider extends IdentityStoreProvider 
         var perUser = new SimpleBooleanProperty(st.isPerUser());
 
         var sshIdentityChoiceConfig = SshIdentityStrategyChoiceConfig.builder()
-                .allowAgentForward(true)
                 .allowKeyFileSync(true)
                 .perUserKeyFileCheck(() -> false)
                 .fileSystem(

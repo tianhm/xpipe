@@ -40,7 +40,6 @@ public class IdentityChoiceBuilder {
     boolean requirePassword;
     boolean keyInput;
     boolean requireKeyInput;
-    boolean allowAgentForward;
     String userChoiceTranslationKey;
     ObservableValue<String> passwordChoiceTranslationKey;
     ObservableValue<DataStoreEntryRef<ShellStore>> fileSystem;
@@ -52,7 +51,6 @@ public class IdentityChoiceBuilder {
             boolean requirePassword,
             boolean keyInput,
             boolean requireKeyInput,
-            boolean allowAgentForward,
             String userChoiceTranslationKey,
             String passwordChoiceTranslationKey) {
         this.identity = identity;
@@ -61,7 +59,6 @@ public class IdentityChoiceBuilder {
         this.requirePassword = requirePassword;
         this.keyInput = keyInput;
         this.requireKeyInput = requireKeyInput;
-        this.allowAgentForward = allowAgentForward;
         this.userChoiceTranslationKey = userChoiceTranslationKey;
         this.passwordChoiceTranslationKey = new ReadOnlyStringWrapper(passwordChoiceTranslationKey);
         this.fileSystem = new ReadOnlyObjectWrapper<>(DataStorage.get().local().ref());
@@ -69,13 +66,13 @@ public class IdentityChoiceBuilder {
 
     public static OptionsBuilder ssh(ObjectProperty<IdentityValue> identity, boolean requireUser) {
         var i = new IdentityChoiceBuilder(
-                identity, true, requireUser, true, true, true, true, "identityChoice", "passwordAuthentication");
+                identity, true, requireUser, true, true, true, "identityChoice", "passwordAuthentication");
         return i.build();
     }
 
     public static OptionsBuilder container(ObjectProperty<IdentityValue> identity) {
         var i = new IdentityChoiceBuilder(
-                identity, true, false, false, false, false, false, "customUsername", "customUsernamePassword");
+                identity, true, false, false, false, false, "customUsername", "customUsernamePassword");
         return i.build();
     }
 
@@ -150,7 +147,6 @@ public class IdentityChoiceBuilder {
                 .addProperty(ref);
 
         var sshIdentityChoiceConfig = SshIdentityStrategyChoiceConfig.builder()
-                .allowAgentForward(allowAgentForward)
                 .allowKeyFileSync(true)
                 .perUserKeyFileCheck(() -> false)
                 .fileSystem(fileSystem)

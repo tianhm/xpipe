@@ -83,7 +83,6 @@ public class PasswordManagerAgentStrategy implements SshIdentityAgentStrategy {
                 .addComp(new SshAgentKeyListComp(config.getFileSystem(), p, identifier, useKeyName()), identifier)
                 .disable(pwmanErrorProp.isNotNull())
                 .nonNull()
-                .hide(!config.isAllowAgentForward())
                 .bind(
                         () -> {
                             return new PasswordManagerAgentStrategy(identifier.get());

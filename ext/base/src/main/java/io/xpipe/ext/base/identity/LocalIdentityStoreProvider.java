@@ -40,7 +40,6 @@ public class LocalIdentityStoreProvider extends IdentityStoreProvider {
         var identity = new SimpleObjectProperty<>(st.getSshIdentity());
 
         var sshIdentityChoiceConfig = SshIdentityStrategyChoiceConfig.builder()
-                .allowAgentForward(true)
                 .allowKeyFileSync(false)
                 .perUserKeyFileCheck(() -> false)
                 .build();
