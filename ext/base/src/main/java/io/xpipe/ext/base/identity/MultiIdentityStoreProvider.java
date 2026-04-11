@@ -1,5 +1,7 @@
 package io.xpipe.ext.base.identity;
 
+import io.xpipe.app.core.AppI18n;
+import io.xpipe.app.core.AppInstallation;
 import io.xpipe.app.ext.DataStore;
 import io.xpipe.app.ext.GuiDialog;
 import io.xpipe.app.hub.comp.StoreListChoiceComp;
@@ -26,9 +28,16 @@ public class MultiIdentityStoreProvider extends IdentityStoreProvider {
     public GuiDialog guiDialog(DataStoreEntry entry, Property<DataStore> store) {
         MultiIdentityStore st = (MultiIdentityStore) store.getValue();
 
-        var initialAllIdentities = new ArrayList<>(st.getIdentities());
-        var initialAvailableIdentities = new ArrayList<>(st.getAvailableIdentities());
-        var identities = new SimpleListProperty<>(FXCollections.observableArrayList(st.getAvailableIdentities()));
+        var initialAvailableIdentities = st.getAvailableIdentities();
+        var identities = new SimpleListProperty<DataStoreEntryRef<IdentityStore>>(FXCollections.observableArrayList());
+        for (UUID identity : st.getIdentities()) {
+            var available = initialAvailableIdentities.stream().filter(id -> id.get().getUuid().equals(identity)).findFirst();
+            if (available.isPresent()) {
+                identities.add(available.get());
+            } else {
+                identities.add(new DataStoreEntryRef<>(DataStoreEntry.createNew(AppI18n.get("unknown"), null)));
+            }
+        }
         var perUser = new SimpleBooleanProperty(st.isPerUser());
 
         return new OptionsBuilder()
@@ -49,7 +58,8 @@ public class MultiIdentityStoreProvider extends IdentityStoreProvider {
                 .bind(
                         () -> {
                             // User made no changes in GUI
-                            if (identities.getValue().equals(st.getAvailableIdentities())) {
+                            if (identities.getValue().stream().map(ref -> ref.get().getUuid()).toList()
+                                    .equals(st.getIdentities())) {
                                 return MultiIdentityStore.builder()
                                         .identities(st.getIdentities())
                                         .perUser(perUser.get())
@@ -57,18 +67,8 @@ public class MultiIdentityStoreProvider extends IdentityStoreProvider {
                             }
 
                             var all = new ArrayList<UUID>();
-                            // All currently selected ones are added
                             for (DataStoreEntryRef<IdentityStore> identity : identities) {
                                 all.add(identity.get().getUuid());
-                            }
-
-                            // Include non-available ones
-                            for (UUID storeIdentity : initialAllIdentities) {
-                                var isAvailable = initialAvailableIdentities.stream()
-                                        .anyMatch(ref -> ref.get().getUuid().equals(storeIdentity));
-                                if (!isAvailable) {
-                                    all.add(storeIdentity);
-                                }
                             }
 
                             return MultiIdentityStore.builder()

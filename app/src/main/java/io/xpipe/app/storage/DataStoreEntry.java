@@ -173,14 +173,14 @@ public class DataStoreEntry extends StorageElement {
                 UUID.randomUUID(), DataStorage.get().getSelectedCategory().getUuid(), store.getName(), store);
     }
 
-    public static DataStoreEntry createNew(@NonNull String name, @NonNull DataStore store) {
+    public static DataStoreEntry createNew(@NonNull String name, DataStore store) {
         return createNew(
                 UUID.randomUUID(), DataStorage.get().getSelectedCategory().getUuid(), name, store);
     }
 
     @SneakyThrows
     public static DataStoreEntry createNew(
-            @NonNull UUID uuid, @NonNull UUID categoryUuid, @NonNull String name, @NonNull DataStore store) {
+            @NonNull UUID uuid, @NonNull UUID categoryUuid, @NonNull String name, DataStore store) {
         if (name.isBlank()) {
             throw new IllegalArgumentException("Name is empty");
         }
