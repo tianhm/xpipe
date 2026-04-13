@@ -4,6 +4,7 @@ import io.xpipe.app.cred.SshIdentityStrategy;
 import io.xpipe.app.cred.UsernameStrategy;
 import io.xpipe.app.secret.EncryptedValue;
 import io.xpipe.app.secret.SecretRetrievalStrategy;
+import io.xpipe.app.storage.DataStoreEntry;
 import io.xpipe.app.storage.DataStoreEntryRef;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -39,6 +40,12 @@ public class LocalIdentityStore extends IdentityStore {
     @Override
     public SshIdentityStrategy getSshIdentity() {
         return sshIdentity != null ? sshIdentity.getValue() : null;
+    }
+
+    @Override
+    public String getName() {
+        var inStorage = hasSelfEntry();
+        return inStorage ? getSelfEntry().getName() : null;
     }
 
     EncryptedValue<SecretRetrievalStrategy> getEncryptedPassword() {

@@ -33,4 +33,6 @@ public abstract class IdentityStore implements SelfReferentialStore, DataStore {
             getSshIdentity().checkComplete();
         }
     }
+
+    public abstract String getName();
 }

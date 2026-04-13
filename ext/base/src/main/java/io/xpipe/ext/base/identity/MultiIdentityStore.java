@@ -32,6 +32,11 @@ public class MultiIdentityStore extends IdentityStore
     List<UUID> identities;
     boolean perUser;
 
+    @Override
+    public String getName() {
+        return getSelected().map(ref -> ref.getStore().getName()).orElse(null);
+    }
+
     public List<DataStoreEntryRef<IdentityStore>> getAvailableIdentities() {
         return identities.stream()
                 .map(uuid -> DataStorage.get().getStoreEntryIfPresent(uuid))

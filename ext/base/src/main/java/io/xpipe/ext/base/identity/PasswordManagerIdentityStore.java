@@ -41,6 +41,11 @@ public class PasswordManagerIdentityStore extends IdentityStore
     PasswordManagerAgentStrategy sshKey;
     boolean perUser;
 
+    @Override
+    public String getName() {
+        return getSelfEntry().getName();
+    }
+
     private boolean checkOutdatedOrRefresh() {
         var instant = getCache("lastQueried", Instant.class, null);
         if (instant != null) {

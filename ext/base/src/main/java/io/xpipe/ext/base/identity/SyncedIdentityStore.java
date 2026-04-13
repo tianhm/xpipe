@@ -33,6 +33,11 @@ public class SyncedIdentityStore extends IdentityStore implements UserScopeStore
     EncryptedValue.VaultKey<SshIdentityStrategy> sshIdentity;
     boolean perUser;
 
+    @Override
+    public String getName() {
+        return getSelfEntry().getName();
+    }
+
     public UsernameStrategy.Fixed getUsername() {
         return new UsernameStrategy.Fixed(username);
     }

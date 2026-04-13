@@ -99,16 +99,22 @@ public interface IdentityValue {
     List<DataStoreEntryRef<?>> getDependencies();
 
     default void checkCompleteUser() throws ValidationException {
-        Validators.nonNull(unwrap().getUsername().hasUser() ? new Object() : null, "Identity username");
+        var n = unwrap().getName();
+        var msg = n != null ? "Username of identity " + n : "Identity username";
+        Validators.nonNull(unwrap().getUsername().hasUser() ? new Object() : null, msg);
     }
 
     default void checkCompletePassword() throws ValidationException {
-        Validators.nonNull(unwrap().getPassword(), "Identity password");
+        var n = unwrap().getName();
+        var msg = n != null ? "Password of identity " + n : "Identity password";
+        Validators.nonNull(unwrap().getPassword(), msg);
         unwrap().getPassword().checkComplete();
     }
 
     default void checkCompleteSshIdentity() throws ValidationException {
-        Validators.nonNull(unwrap().getSshIdentity(), "Identity ssh key");
+        var n = unwrap().getName();
+        var msg = n != null ? "SSH key of identity " + n : "Identity SSH key";
+        Validators.nonNull(unwrap().getSshIdentity(), msg);
         unwrap().getSshIdentity().checkComplete();
     }
 
