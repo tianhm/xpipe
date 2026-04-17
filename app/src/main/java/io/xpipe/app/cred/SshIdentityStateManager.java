@@ -81,15 +81,9 @@ public class SshIdentityStateManager {
                 event.customAction(shutdown).handle();
 
                 if (r.get()) {
-                    if (sc.getShellDialect() == ShellDialects.CMD) {
-                        sc.command(
-                                        "powershell -Command \"Start-Process cmd -Wait -ArgumentList /c, sc, stop, ssh-agent -Verb runAs\"")
-                                .executeAndCheck();
-                    } else {
-                        sc.command(
-                                        "powershell -Command \"Start-Process cmd -Wait -ArgumentList /c, sc, stop, ssh-agent -Verb runAs\"")
-                                .executeAndCheck();
-                    }
+                    sc.command(
+                                    "powershell -Command \"Start-Process cmd -Wait -ArgumentList /c, sc, stop, ssh-agent -Verb runAs\"")
+                            .executeAndCheck();
                 }
             }
         }

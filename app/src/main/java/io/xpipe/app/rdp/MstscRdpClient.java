@@ -1,16 +1,24 @@
 package io.xpipe.app.rdp;
 
+import io.xpipe.app.comp.base.ModalButton;
+import io.xpipe.app.comp.base.ModalOverlay;
 import io.xpipe.app.core.AppCache;
+import io.xpipe.app.core.window.AppDialog;
 import io.xpipe.app.platform.OptionsBuilder;
+import io.xpipe.app.prefs.AppPrefs;
 import io.xpipe.app.prefs.ExternalApplicationType;
 import io.xpipe.app.process.CommandBuilder;
 import io.xpipe.app.process.LocalShell;
 import io.xpipe.app.util.GlobalTimer;
 import io.xpipe.app.util.RdpConfig;
+import io.xpipe.app.util.ThreadHelper;
 import io.xpipe.app.util.WindowsRegistry;
+import io.xpipe.core.OsType;
 import io.xpipe.core.SecretValue;
 
+import javafx.application.Platform;
 import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -31,6 +39,48 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 public class MstscRdpClient implements ExternalApplicationType.PathApplication, ExternalRdpClient {
 
+    private static Boolean usesNewSecurityDialog = null;
+
+    private static synchronized boolean usesNewSecurityDialog() {
+        if (usesNewSecurityDialog != null) {
+            return usesNewSecurityDialog;
+        }
+
+        if (OsType.ofLocal() != OsType.WINDOWS) {
+            return (usesNewSecurityDialog = false);
+        }
+
+        var build = WindowsRegistry.local().readStringValueIfPresent(WindowsRegistry.HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentBuild");
+        if (build.isEmpty()) {
+            return (usesNewSecurityDialog = false);
+        }
+
+        return (usesNewSecurityDialog = ("26200".equals(build.get())));
+    }
+
+    private static boolean isNewSecurityDialogEnabled() {
+        var version = WindowsRegistry.local().readIntegerValueIfPresent(WindowsRegistry.HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\Client", "RedirectionWarningDialogVersion");
+        return version.isEmpty() || version.getAsInt() != 1;
+    }
+
+    private static synchronized void changeSecurityDialogSetting(boolean val) throws Exception {
+        var sc = LocalShell.getLocalPowershell();
+        if (sc.isEmpty()) {
+            return;
+        }
+
+        if (val) {
+            sc.get().command("Start-Process reg -Wait -ArgumentList add, \"`\"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\Client`\"\", /t, REG_DWORD , /v, RedirectionWarningDialogVersion, /d, 1, /f -Verb runAs")
+                    .executeAndCheck();
+        } else {
+            sc.get().command("Start-Process reg -Wait -ArgumentList delete, \"`\"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\Terminal Services\\Client`\"\", /v, RedirectionWarningDialogVersion, /f -Verb runAs")
+                    .executeAndCheck();
+        }
+    }
+
+
     @Value
     @Jacksonized
     @Builder
@@ -44,9 +94,28 @@ public class MstscRdpClient implements ExternalApplicationType.PathApplication, 
     @SuppressWarnings("unused")
     static OptionsBuilder createOptions(Property<MstscRdpClient> property) {
         var smartSizing = new SimpleObjectProperty<>(property.getValue().isSmartSizing());
+
+        var rdpSecurityValueVisible = new SimpleBooleanProperty();
+        var rdpSecurityValue = new SimpleBooleanProperty();
+        ThreadHelper.runAsync(() -> {
+            var val = MstscRdpClient.usesNewSecurityDialog();
+            rdpSecurityValueVisible.set(val);
+
+            Platform.runLater(() -> {
+                rdpSecurityValue.set(!MstscRdpClient.isNewSecurityDialogEnabled());
+                rdpSecurityValue.addListener((observable, oldValue, newValue) -> {
+                    ThreadHelper.runFailableAsync(() -> {
+                        MstscRdpClient.changeSecurityDialogSetting(newValue);
+                    });
+                });
+            });
+        });
+
         return new OptionsBuilder()
                 .nameAndDescription("rdpSmartSizing")
                 .addToggle(smartSizing)
+                .nameAndDescription("disableRdpWindowsSecurityWarning")
+                .addToggle(rdpSecurityValue)
                 .bind(
                         () -> MstscRdpClient.builder()
                                 .smartSizing(smartSizing.get())
@@ -58,6 +127,17 @@ public class MstscRdpClient implements ExternalApplicationType.PathApplication, 
 
     @Override
     public void launch(RdpLaunchConfig configuration) throws Exception {
+        var securityDialogShown = AppCache.getBoolean("rdpWindowsSecurityWarningDialog", false);
+        if (!securityDialogShown && usesNewSecurityDialog() && isNewSecurityDialogEnabled()) {
+            var modal = ModalOverlay.of("rdpWindowsSecurityWarningDialogTitle", AppDialog.dialogTextKey("rdpWindowsSecurityWarningDialogContent"));
+            modal.addButton(ModalButton.cancel());
+            modal.addButton(new ModalButton("openSettings", () -> {
+                AppPrefs.get().selectCategory("rdp");
+            }, true, true));
+            modal.show();
+            AppCache.update("rdpWindowsSecurityWarningDialog", true);
+        }
+
         var adaptedRdpConfig = getAdaptedConfig(configuration);
 
         var setCache = prepareLocalhostRegistryCache(configuration);
