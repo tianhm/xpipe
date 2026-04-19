@@ -31,6 +31,19 @@ public class AppDisplayScale {
         }
     }
 
+    public static Integer clampValue(Integer input) {
+        if (input == null) {
+            return null;
+        }
+
+        var rest = input % 25;
+        if (rest == 0) {
+            return input;
+        }
+
+        return input - rest;
+    }
+
     public static boolean hasOnlyDefaultDisplayScale() {
         return defaultDisplayScale != null ? defaultDisplayScale : false;
     }

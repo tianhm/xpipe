@@ -804,6 +804,8 @@ public final class AppPrefs {
     }
 
     private void fixLocalValues() {
+        uiScale.setValue(AppDisplayScale.clampValue(uiScale.getValue()));
+
         if (AppDistributionType.get() == AppDistributionType.WEBTOP) {
             performanceMode.setValue(true);
         } else if (System.getProperty("os.name").toLowerCase().contains("server")) {
